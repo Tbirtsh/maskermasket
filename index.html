@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Assignment Tracker</title>
+</head>
+<style>
+
+body {
+      background-image: url("https://coolbackgrounds.io/images/backgrounds/index/sea-edge-79ab30e2.png");
+       background-size: cover;
+      font-family: 'Ranade', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    #name-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  margin-bottom: 50%;
+
+}
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 800px;
+      box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      text-align: center;
+      padding: 10px;
+    }
+    th {
+      background-color: #2c3e50;
+      color: #fff;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    tr:hover {
+      background-color: #e2e2e2;
+      opacity: 0.5;
+    }
+    /* Style the completed box based on its value */
+    .completed-yes {
+      color: #fff;
+      background-color: #2ecc71;
+      padding: 5px 10px;
+      border-radius: 20px;
+    }
+    form-container {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 800px;
+      box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+  }
+    .completed-no {
+      color: #fff;
+      background-color: #e74c3c;
+      padding: 5px 10px;
+      border-radius: 20px;
+    }
+    /* Style the button */
+    button {
+      background-color: #3498db;
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+</style>
+<body>
+  
+  <table>
+  <div id="form-container">
+  <form id="assignment-form">
+    <label for="assignment-name">Assignment Name:</label>
+    <input type="text" id="assignment-name" name="assignment-name"><br>
+    <label for="person-name">Person Name:</label>
+    <input type="text" id="person-name" name="person-name"><br>
+    <button type="submit">Add Assignment</button>
+  </form>
+  </div>
+  </table>
+  
+  <table id="assignment-table">
+    <thead>
+      <tr>
+        <th>Assignment Name</th>
+        <th>Completed</th>
+        <th>Person Name</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+
+  <!-- Include Firebase JavaScript SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-database.js"></script>
+
+  <script>
+    // Initialize Firebase
+    var firebaseConfig = {
+      // Your Firebase config here
+        apiKey: "AIzaSyCrh02OY1EwvLtyPtHaPrCLwVtAvENhV4s",
+  authDomain: "onlineschoolworktable.firebaseapp.com",
+  projectId: "onlineschoolworktable",
+  storageBucket: "onlineschoolworktable.appspot.com",
+  messagingSenderId: "1046850639368",
+  appId: "1:1046850639368:web:84d48661f90114e237e3bd",
+  measurementId: "G-CNEC0TP5CQ"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    // Get a reference to the assignments node
+    var assignmentsRef = firebase.database().ref('assignments');
+
+    // Listen for changes to the assignments node
+    assignmentsRef.on('value', function(snapshot) {
+      // Clear the table body
+      var tableBody = document.querySelector('#assignment-table tbody');
+      tableBody.innerHTML = '';
+
+      // Loop through the assignments in the snapshot and add them to the table
+      snapshot.forEach(function(childSnapshot) {
+  var assignment = childSnapshot.val();
+  var row = document.createElement('tr');
+  var nameCell = document.createElement('td');
+  var completedCell = document.createElement('td');
+  var personCell = document.createElement('td');
+  var actionsCell = document.createElement('td');
+  var deleteButton = document.createElement('button');
+  deleteButton.textContent = 'Delete';
+  deleteButton.addEventListener('click', function() {
+    deleteAssignment(childSnapshot.key);
+  });
+  actionsCell.appendChild(deleteButton);
+
+  nameCell.textContent = assignment.name;
+  completedCell.textContent = assignment.completed ? 'Yes' : 'No';
+  personCell.textContent = assignment.person;
+
+  // Add a button to mark the task as completed or not completed
+  var completedButton = document.createElement('button');
+  completedButton.textContent = assignment.completed ? 'Completed' : 'Not Completed';
+  completedButton.addEventListener('click', function() {
+    assignmentsRef.child(childSnapshot.key).update({ completed: !assignment.completed });
+  });
+  actionsCell.appendChild(completedButton);
+
+  row.appendChild(nameCell);
+  row.appendChild(completedCell);
+  row.appendChild(personCell);
+  row.appendChild(actionsCell);
+  tableBody.appendChild(row);
+});
+
+    });
+    function deleteAssignment(assignmentKey) {
+  // Get a reference to the Firebase database node where the assignment is stored
+  const assignmentsRef = firebase.database().ref('assignments');
+
+  // Use the remove() method to delete the assignment with the given key
+  assignmentsRef.child(assignmentKey).remove()
+    .then(() => {
+      console.log(`Assignment with key ${assignmentKey} deleted successfully`);
+    })
+    .catch((error) => {
+      console.error(`Error deleting assignment with key ${assignmentKey}:`, error);
+    });
+}
+    // Handle form submission
+    var form = document.querySelector('#assignment-form');
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      // Get form values
+      var name = document.querySelector('#assignment-name').value;
+      var person = document.querySelector('#person-name').value;
+
+      // Create a new assignment object
+      var newAssignment = {
+        name: name,
+        completed: false,
+        person: person
+      };
+
+      // Add the new assignment object to the Firebase database
+      assignmentsRef.push(newAssignment);
+
+      // Reset the form
+      form.reset();
+    });
+  </script>
+</body>
+</html>
